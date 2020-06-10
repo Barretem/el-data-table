@@ -5,88 +5,105 @@
       <slot name="no-data"></slot>
     </template>
     <template v-else>
-      <!-- 搜索字段 -->
-      <!-- @submit.native.prevent -->
-      <!-- 阻止表单提交的默认行为 -->
-      <!-- https://www.w3.org/MarkUp/html-spec/html-spec_8.html#SEC8.2 -->
-      <el-form-renderer
-        v-if="hasSearchForm"
-        ref="searchForm"
-        :content="_searchForm"
-        inline
-        @submit.native.prevent
-      >
-        <slot
-          v-for="slot in searchLocatedSlotKeys"
-          :slot="slot.replace('search:', 'id:')"
-          :name="slot"
-        />
-        <!--@slot 额外的搜索内容, 当searchForm不满足需求时可以使用-->
-        <slot name="search"></slot>
-        <el-form-item>
-          <!--https://github.com/ElemeFE/element/pull/5920-->
-          <el-button
-            native-type="submit"
-            type="primary"
-            :size="buttonSize"
-            @click="search"
-            >查询</el-button
-          >
-          <el-button :size="buttonSize" @click="resetSearch">重置</el-button>
-        </el-form-item>
-      </el-form-renderer>
-
-      <el-form v-if="hasHeader">
-        <el-form-item>
-          <el-button
-            v-if="hasNew"
-            type="primary"
-            :size="buttonSize"
-            @click="onDefaultNew"
-            >{{ newText }}</el-button
-          >
-          <template v-for="(btn, i) in headerButtons">
-            <self-loading-button
-              v-if="'show' in btn ? btn.show(selected) : true"
-              :key="i"
-              :disabled="'disabled' in btn ? btn.disabled(selected) : false"
-              :click="btn.atClick"
-              :params="selected"
-              :callback="getList"
-              :size="buttonSize"
-              v-bind="btn"
-            >
-              {{
-                typeof btn.text === 'function' ? btn.text(selected) : btn.text
-              }}
-            </self-loading-button>
-          </template>
-          <el-button
-            v-if="hasSelect && hasDelete"
-            type="danger"
-            :size="buttonSize"
-            :disabled="selected.length === 0 || (single && selected.length > 1)"
-            @click="onDefaultDelete(single ? selected[0] : selected)"
-            >{{ deleteText }}</el-button
-          >
-
-          <!--@slot 额外的header内容, 当headerButtons不满足需求时可以使用，作用域传入selected -->
-          <slot name="header" :selected="selected" />
-
-          <!--@collapse 自定义折叠按钮, 默认的样式文案不满足时可以使用，scope 默认返回当前折叠状态 Boolean -->
-          <slot name="collapse" :isSearchCollapse="isSearchCollapse">
+      <div class="header-wrapper">
+        <!-- 搜索字段 -->
+        <!-- @submit.native.prevent -->
+        <!-- 阻止表单提交的默认行为 -->
+        <!-- https://www.w3.org/MarkUp/html-spec/html-spec_8.html#SEC8.2 -->
+        <el-form-renderer
+          v-if="hasSearchForm"
+          ref="searchForm"
+          :class="{
+            'search-form-wrapper': headerInline
+          }"
+          :style="{
+            marginLeft: buttonContainerWidthStr
+          }"
+          :content="_searchForm"
+          inline
+          @submit.native.prevent
+        >
+          <slot
+            v-for="slot in searchLocatedSlotKeys"
+            :slot="slot.replace('search:', 'id:')"
+            :name="slot"
+          />
+          <!--@slot 额外的搜索内容, 当searchForm不满足需求时可以使用-->
+          <slot name="search"></slot>
+          <el-form-item v-if="hasSearchButton">
+            <!--https://github.com/ElemeFE/element/pull/5920-->
             <el-button
-              v-if="canSearchCollapse"
-              type="default"
+              native-type="submit"
+              type="primary"
               :size="buttonSize"
-              :icon="`el-icon-arrow-${isSearchCollapse ? 'down' : 'up'}`"
-              @click="isSearchCollapse = !isSearchCollapse"
-              >{{ isSearchCollapse ? '展开' : '折叠' }}搜索</el-button
+              @click="search"
+              >查询</el-button
             >
-          </slot>
-        </el-form-item>
-      </el-form>
+            <el-button :size="buttonSize" @click="resetSearch">重置</el-button>
+          </el-form-item>
+        </el-form-renderer>
 
+        <el-form
+          v-if="hasHeader"
+          :class="{
+            'header-buttons-wrapper': headerInline
+          }"
+          :style="{
+            width: buttonContainerWidthStr
+          }"
+        >
+          <el-form-item>
+            <el-button
+              v-if="hasNew"
+              type="primary"
+              :size="buttonSize"
+              @click="onDefaultNew"
+              >{{ newText }}</el-button
+            >
+            <template v-for="(btn, i) in headerButtons">
+              <self-loading-button
+                v-if="'show' in btn ? btn.show(selected) : true"
+                :key="i"
+                :disabled="'disabled' in btn ? btn.disabled(selected) : false"
+                :click="btn.atClick"
+                :params="selected"
+                :callback="getList"
+                :size="buttonSize"
+                v-bind="btn"
+              >
+                {{
+                  typeof btn.text === 'function' ? btn.text(selected) : btn.text
+                }}
+              </self-loading-button>
+            </template>
+            <el-button
+              v-if="hasSelect && hasDelete"
+              type="danger"
+              :size="buttonSize"
+              :disabled="
+                selected.length === 0 || (single && selected.length > 1)
+              "
+              @click="onDefaultDelete(single ? selected[0] : selected)"
+              >{{ deleteText }}</el-button
+            >
+
+            <!--@slot 额外的header内容, 当headerButtons不满足需求时可以使用，作用域传入selected -->
+            <slot name="header" :selected="selected" />
+
+            <!--@collapse 自定义折叠按钮, 默认的样式文案不满足时可以使用，scope 默认返回当前折叠状态 Boolean -->
+            <slot name="collapse" :isSearchCollapse="isSearchCollapse">
+              <el-button
+                v-if="canSearchCollapse"
+                type="default"
+                :size="buttonSize"
+                :icon="`el-icon-arrow-${isSearchCollapse ? 'down' : 'up'}`"
+                @click="isSearchCollapse = !isSearchCollapse"
+                >{{ isSearchCollapse ? '展开' : '折叠' }}搜索</el-button
+              >
+            </slot>
+          </el-form-item>
+        </el-form>
+      </div>
       <el-table
         ref="table"
         v-loading="loading"
@@ -305,6 +322,27 @@ export default {
   },
 
   props: {
+    /**
+     * 是否将头部按钮列表与搜索列表横向摆放
+     */
+    headerInline: {
+      type: Boolean,
+      default: false
+    },
+    /**
+     * 自定义按钮列表的宽度，只有在headerInline为true时生效
+     */
+    buttonContainerWidth: {
+      type: Number || String,
+      default: 'auto'
+    },
+    /**
+     * 是否显示搜索框中的查询，重置按钮
+     */
+    hasSearchButton: {
+      type: Boolean,
+      default: true
+    },
     /**
      * 请求url, 如果为空, 则不会发送请求; 改变url, 则table会重新发送请求
      */
@@ -813,6 +851,16 @@ export default {
     }
   },
   computed: {
+    buttonContainerWidthStr() {
+      if (!this.headerInline) {
+        return 'auto'
+      }
+      const buttonContainerWidth = this.buttonContainerWidth
+      if (typeof buttonContainerWidth === 'number') {
+        return `${buttonContainerWidth}px`
+      }
+      return buttonContainerWidth
+    },
     hasSelect() {
       return this.columns.length && this.columns[0].type == 'selection'
     },
@@ -1256,6 +1304,20 @@ export default {
 .el-data-table {
   @color-blue: #2196f3;
   @space-width: 18px;
+
+  .header-buttons-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  .header-wrapper {
+    position: relative;
+  }
+
+  .search-form-wrapper {
+    text-align: right;
+  }
 
   .ms-tree-space {
     position: relative;

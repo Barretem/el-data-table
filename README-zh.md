@@ -244,7 +244,8 @@ import {
   Table,
   TableColumn,
   Message,
-  MessageBox
+  MessageBox,
+  Drawer
 } from 'element-ui'
 
 Vue.use(Button)
@@ -255,6 +256,7 @@ Vue.use(Loading.directive)
 Vue.use(Pagination)
 Vue.use(Table)
 Vue.use(TableColumn)
+Vue.use(Drawer)
 Vue.component('el-form-renderer', ElFormRenderer)
 Vue.component('el-data-table', ElDataTable)
 

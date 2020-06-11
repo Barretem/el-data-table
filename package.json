@@ -1,9 +1,11 @@
 {
-  "name": "@femessage/el-data-table",
+  "name": "@spass/el-data-table",
   "version": "1.2.1",
   "description": "base on element-ui, makes crud easily",
   "author": "https://github.com/FEMessage",
   "license": "MIT",
+  "fork": "https://github.com/FEMessage/el-data-table.git",
+  "forkVersion": "1.2.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/FEMessage/el-data-table.git"
@@ -38,6 +40,7 @@
     "release": "gren release --override"
   },
   "dependencies": {
+    "element-ui": "^2.13.2",
     "lodash.get": "^4.4.2",
     "lodash.isempty": "^4.4.0",
     "lodash.values": "^4.3.0"
@@ -51,7 +54,6 @@
     "axios": "^0.19.0",
     "babel-eslint": "^10.0.3",
     "babel-loader": "^8.0.5",
-    "element-ui": "2.4.11",
     "eslint": "^6.6.0",
     "eslint-config-prettier": "^6.5.0",
     "eslint-plugin-jest": "^23.0.2",

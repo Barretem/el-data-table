@@ -5,88 +5,105 @@
       <slot name="no-data"></slot>
     </template>
     <template v-else>
-      <!-- 搜索字段 -->
-      <!-- @submit.native.prevent -->
-      <!-- 阻止表单提交的默认行为 -->
-      <!-- https://www.w3.org/MarkUp/html-spec/html-spec_8.html#SEC8.2 -->
-      <el-form-renderer
-        v-if="hasSearchForm"
-        ref="searchForm"
-        :content="_searchForm"
-        inline
-        @submit.native.prevent
-      >
-        <slot
-          v-for="slot in searchLocatedSlotKeys"
-          :slot="slot.replace('search:', 'id:')"
-          :name="slot"
-        />
-        <!--@slot 额外的搜索内容, 当searchForm不满足需求时可以使用-->
-        <slot name="search"></slot>
-        <el-form-item>
-          <!--https://github.com/ElemeFE/element/pull/5920-->
-          <el-button
-            native-type="submit"
-            type="primary"
-            :size="buttonSize"
-            @click="search"
-            >查询</el-button
-          >
-          <el-button :size="buttonSize" @click="resetSearch">重置</el-button>
-        </el-form-item>
-      </el-form-renderer>
-
-      <el-form v-if="hasHeader">
-        <el-form-item>
-          <el-button
-            v-if="hasNew"
-            type="primary"
-            :size="buttonSize"
-            @click="onDefaultNew"
-            >{{ newText }}</el-button
-          >
-          <template v-for="(btn, i) in headerButtons">
-            <self-loading-button
-              v-if="'show' in btn ? btn.show(selected) : true"
-              :key="i"
-              :disabled="'disabled' in btn ? btn.disabled(selected) : false"
-              :click="btn.atClick"
-              :params="selected"
-              :callback="getList"
-              :size="buttonSize"
-              v-bind="btn"
-            >
-              {{
-                typeof btn.text === 'function' ? btn.text(selected) : btn.text
-              }}
-            </self-loading-button>
-          </template>
-          <el-button
-            v-if="hasSelect && hasDelete"
-            type="danger"
-            :size="buttonSize"
-            :disabled="selected.length === 0 || (single && selected.length > 1)"
-            @click="onDefaultDelete(single ? selected[0] : selected)"
-            >{{ deleteText }}</el-button
-          >
-
-          <!--@slot 额外的header内容, 当headerButtons不满足需求时可以使用，作用域传入selected -->
-          <slot name="header" :selected="selected" />
-
-          <!--@collapse 自定义折叠按钮, 默认的样式文案不满足时可以使用，scope 默认返回当前折叠状态 Boolean -->
-          <slot name="collapse" :isSearchCollapse="isSearchCollapse">
+      <div class="header-wrapper">
+        <!-- 搜索字段 -->
+        <!-- @submit.native.prevent -->
+        <!-- 阻止表单提交的默认行为 -->
+        <!-- https://www.w3.org/MarkUp/html-spec/html-spec_8.html#SEC8.2 -->
+        <el-form-renderer
+          v-if="hasSearchForm"
+          ref="searchForm"
+          :class="{
+            'search-form-wrapper': headerInline
+          }"
+          :style="{
+            marginLeft: buttonContainerWidthStr
+          }"
+          :content="_searchForm"
+          inline
+          @submit.native.prevent
+        >
+          <slot
+            v-for="slot in searchLocatedSlotKeys"
+            :slot="slot.replace('search:', 'id:')"
+            :name="slot"
+          />
+          <!--@slot 额外的搜索内容, 当searchForm不满足需求时可以使用-->
+          <slot name="search"></slot>
+          <el-form-item v-if="hasSearchButton">
+            <!--https://github.com/ElemeFE/element/pull/5920-->
             <el-button
-              v-if="canSearchCollapse"
-              type="default"
+              native-type="submit"
+              type="primary"
               :size="buttonSize"
-              :icon="`el-icon-arrow-${isSearchCollapse ? 'down' : 'up'}`"
-              @click="isSearchCollapse = !isSearchCollapse"
-              >{{ isSearchCollapse ? '展开' : '折叠' }}搜索</el-button
+              @click="search"
+              >查询</el-button
             >
-          </slot>
-        </el-form-item>
-      </el-form>
+            <el-button :size="buttonSize" @click="resetSearch">重置</el-button>
+          </el-form-item>
+        </el-form-renderer>
 
+        <el-form
+          v-if="hasHeader"
+          :class="{
+            'header-buttons-wrapper': headerInline
+          }"
+          :style="{
+            width: buttonContainerWidthStr
+          }"
+        >
+          <el-form-item>
+            <el-button
+              v-if="hasNew"
+              type="primary"
+              :size="buttonSize"
+              @click="onDefaultNew"
+              >{{ newText }}</el-button
+            >
+            <template v-for="(btn, i) in headerButtons">
+              <self-loading-button
+                v-if="'show' in btn ? btn.show(selected) : true"
+                :key="i"
+                :disabled="'disabled' in btn ? btn.disabled(selected) : false"
+                :click="btn.atClick"
+                :params="selected"
+                :callback="getList"
+                :size="buttonSize"
+                v-bind="btn"
+              >
+                {{
+                  typeof btn.text === 'function' ? btn.text(selected) : btn.text
+                }}
+              </self-loading-button>
+            </template>
+            <el-button
+              v-if="hasSelect && hasDelete"
+              type="danger"
+              :size="buttonSize"
+              :disabled="
+                selected.length === 0 || (single && selected.length > 1)
+              "
+              @click="onDefaultDelete(single ? selected[0] : selected)"
+              >{{ deleteText }}</el-button
+            >
+
+            <!--@slot 额外的header内容, 当headerButtons不满足需求时可以使用，作用域传入selected -->
+            <slot name="header" :selected="selected" />
+
+            <!--@collapse 自定义折叠按钮, 默认的样式文案不满足时可以使用，scope 默认返回当前折叠状态 Boolean -->
+            <slot name="collapse" :isSearchCollapse="isSearchCollapse">
+              <el-button
+                v-if="canSearchCollapse"
+                type="default"
+                :size="buttonSize"
+                :icon="`el-icon-arrow-${isSearchCollapse ? 'down' : 'up'}`"
+                @click="isSearchCollapse = !isSearchCollapse"
+                >{{ isSearchCollapse ? '展开' : '折叠' }}搜索</el-button
+              >
+            </slot>
+          </el-form-item>
+        </el-form>
+      </div>
       <el-table
         ref="table"
         v-loading="loading"
@@ -285,7 +302,7 @@ import _get from 'lodash.get'
 import _values from 'lodash.values'
 import _isEmpty from 'lodash.isempty'
 import SelfLoadingButton from './components/self-loading-button.vue'
-import TheDialog, {dialogModes} from './components/the-dialog.vue'
+import TheDialog, {dialogModes} from './components/the-drawer.vue'
 import ElDataTableColumn from './components/el-data-table-column'
 import * as queryUtil from './utils/query'
 import getSelectStrategy from './utils/select-strategy'
@@ -305,6 +322,34 @@ export default {
   },
 
   props: {
+    /**
+     * 是否将头部按钮列表与搜索列表横向摆放
+     */
+    headerInline: {
+      type: Boolean,
+      default: false
+    },
+    /**
+     * 自定义按钮列表的宽度，只有在headerInline为true时生效
+     */
+    buttonContainerWidth: {
+      type: [Number, String],
+      default: 'auto'
+    },
+    /**
+     * 自定义请求数据函数，当组件需要自定义请求数据列表的时候使用。如果有url设置，则优先使用URL.注意，返回的数据需要用data包裹。即{data: XXX}
+     */
+    customQueryDataFn: {
+      type: Function,
+      default: null
+    },
+    /**
+     * 是否显示搜索框中的查询，重置按钮
+     */
+    hasSearchButton: {
+      type: Boolean,
+      default: true
+    },
     /**
      * 请求url, 如果为空, 则不会发送请求; 改变url, 则table会重新发送请求
      */
@@ -813,6 +858,16 @@ export default {
     }
   },
   computed: {
+    buttonContainerWidthStr() {
+      if (!this.headerInline) {
+        return 'auto'
+      }
+      const buttonContainerWidth = this.buttonContainerWidth
+      if (typeof buttonContainerWidth === 'number') {
+        return `${buttonContainerWidth}px`
+      }
+      return buttonContainerWidth
+    },
     hasSelect() {
       return this.columns.length && this.columns[0].type == 'selection'
     },
@@ -910,6 +965,9 @@ export default {
         }
       }
     }
+    if (!this.url) {
+      this.$nextTick(this.getList)
+    }
   },
   methods: {
     /**
@@ -918,10 +976,17 @@ export default {
      * @param {object} options 方法选项
      */
     getList({loading = true} = {}) {
-      const {url} = this
+      // 判断是否用URL
+      // 1、如果用URL，则走正常流程
+      // 2、如果用customQueryDataFn,则走自定义查询数据
+      // 3、自定义查询数据的时候需要将项目中的数据返回出去
+      // 4、自定义查询数据需要根据需求组装数据格式
+      const {url, customQueryDataFn} = this
 
-      if (!url) {
-        console.warn('DataTable: url 为空, 不发送请求')
+      if (!url && !customQueryDataFn) {
+        console.warn(
+          'DataTable: url 与 customQueryDataFn 不能都为空, 不发送请求'
+        )
         return
       }
 
@@ -964,64 +1029,72 @@ export default {
         }
       }
 
-      this.$axios
-        .get(url, config)
-        .then(({data: resp}) => {
-          let data = []
+      const reduceSuccessData = ({data: resp}) => {
+        let data = []
 
-          // 不分页
-          if (!this.hasPagination) {
-            data =
-              _get(resp, this.dataPath) ||
-              _get(resp, noPaginationDataPath) ||
-              []
-            this.total = data.length
-          } else {
-            data = _get(resp, this.dataPath) || []
-            // 获取不到值得时候返回 undefined, el-pagination 接收一个 null 或者 undefined 会导致没数据但是下一页可点击
-            this.total = _get(resp, this.totalPath) || 0
-            const lastPage = Math.ceil(this.total / this.size)
-            if (0 < lastPage && lastPage < this.page) {
-              this.page = lastPage
-              this.getList(...arguments)
-              return
-            }
+        // 不分页
+        if (!this.hasPagination) {
+          data =
+            _get(resp, this.dataPath) || _get(resp, noPaginationDataPath) || []
+          this.total = data.length
+        } else {
+          data = _get(resp, this.dataPath) || []
+          // 获取不到值得时候返回 undefined, el-pagination 接收一个 null 或者 undefined 会导致没数据但是下一页可点击
+          this.total = _get(resp, this.totalPath) || 0
+          const lastPage = Math.ceil(this.total / this.size)
+          if (0 < lastPage && lastPage < this.page) {
+            this.page = lastPage
+            this.getList(...arguments)
+            return
           }
+        }
 
-          this.data = data
+        this.data = data
 
-          // 树形结构逻辑
-          if (this.isTree) {
-            this.data = this.tree2Array(data, this.expandAll)
-          }
+        // 树形结构逻辑
+        if (this.isTree) {
+          this.data = this.tree2Array(data, this.expandAll)
+        }
 
-          this.showNoData =
-            this.$slots['no-data'] &&
-            this.total === 0 &&
-            (_isEmpty(formValue) || _values(formValue).every(isFalsey))
+        this.showNoData =
+          this.$slots['no-data'] &&
+          this.total === 0 &&
+          (_isEmpty(formValue) || _values(formValue).every(isFalsey))
 
-          this.loading = false
-          /**
-           * 请求返回, 数据更新后触发
-           * @property {object} data - table的数据
-           * @property {object} resp - 请求返回的完整response
-           */
-          this.$emit('update', data, resp)
+        this.loading = false
+        /**
+         * 请求返回, 数据更新后触发
+         * @property {object} data - table的数据
+         * @property {object} resp - 请求返回的完整response
+         */
+        this.$emit('update', data, resp)
 
-          // 开启persistSelection时，需要同步selected状态到el-table中
-          this.$nextTick(() => {
-            this.selectStrategy.updateElTableSelection()
-          })
+        // 开启persistSelection时，需要同步selected状态到el-table中
+        this.$nextTick(() => {
+          this.selectStrategy.updateElTableSelection()
         })
-        .catch(err => {
-          /**
-           * 请求数据失败，返回err对象
-           * @event error
-           */
-          this.$emit('error', err)
-          this.total = 0
-          this.loading = false
-        })
+      }
+
+      const reduceErrData = err => {
+        /**
+         * 请求数据失败，返回err对象
+         * @event error
+         */
+        this.$emit('error', err)
+        this.total = 0
+        this.loading = false
+      }
+      if (url) {
+        this.$axios
+          .get(url, config)
+          .then(reduceSuccessData)
+          .catch(reduceErrData)
+      } else if (customQueryDataFn) {
+        console.error(customQueryDataFn)
+        customQueryDataFn(config)
+          .then(reduceSuccessData)
+          .catch(reduceErrData)
+      }
     },
     async search() {
       const form = this.$refs.searchForm
@@ -1256,6 +1329,20 @@ export default {
 .el-data-table {
   @color-blue: #2196f3;
   @space-width: 18px;
+
+  .header-buttons-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  .header-wrapper {
+    position: relative;
+  }
+
+  .search-form-wrapper {
+    text-align: right;
+  }
 
   .ms-tree-space {
     position: relative;

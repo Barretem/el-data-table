@@ -333,8 +333,15 @@ export default {
      * 自定义按钮列表的宽度，只有在headerInline为true时生效
      */
     buttonContainerWidth: {
-      type: Number || String,
+      type: [Number, String],
       default: 'auto'
+    },
+    /**
+     * 自定义请求数据函数，当组件需要自定义请求数据列表的时候使用。如果有url设置，则优先使用URL.注意，返回的数据需要用data包裹。即{data: XXX}
+     */
+    customQueryDataFn: {
+      type: Function,
+      default: null
     },
     /**
      * 是否显示搜索框中的查询，重置按钮
@@ -958,6 +965,9 @@ export default {
         }
       }
     }
+    if (!this.url) {
+      this.$nextTick(this.getList)
+    }
   },
   methods: {
     /**
@@ -966,10 +976,17 @@ export default {
      * @param {object} options 方法选项
      */
     getList({loading = true} = {}) {
-      const {url} = this
+      // 判断是否用URL
+      // 1、如果用URL，则走正常流程
+      // 2、如果用customQueryDataFn,则走自定义查询数据
+      // 3、自定义查询数据的时候需要将项目中的数据返回出去
+      // 4、自定义查询数据需要根据需求组装数据格式
+      const {url, customQueryDataFn} = this
 
-      if (!url) {
-        console.warn('DataTable: url 为空, 不发送请求')
+      if (!url && !customQueryDataFn) {
+        console.warn(
+          'DataTable: url 与 customQueryDataFn 不能都为空, 不发送请求'
+        )
         return
       }
 
@@ -1012,64 +1029,72 @@ export default {
         }
       }
 
-      this.$axios
-        .get(url, config)
-        .then(({data: resp}) => {
-          let data = []
+      const reduceSuccessData = ({data: resp}) => {
+        let data = []
 
-          // 不分页
-          if (!this.hasPagination) {
-            data =
-              _get(resp, this.dataPath) ||
-              _get(resp, noPaginationDataPath) ||
-              []
-            this.total = data.length
-          } else {
-            data = _get(resp, this.dataPath) || []
-            // 获取不到值得时候返回 undefined, el-pagination 接收一个 null 或者 undefined 会导致没数据但是下一页可点击
-            this.total = _get(resp, this.totalPath) || 0
-            const lastPage = Math.ceil(this.total / this.size)
-            if (0 < lastPage && lastPage < this.page) {
-              this.page = lastPage
-              this.getList(...arguments)
-              return
-            }
+        // 不分页
+        if (!this.hasPagination) {
+          data =
+            _get(resp, this.dataPath) || _get(resp, noPaginationDataPath) || []
+          this.total = data.length
+        } else {
+          data = _get(resp, this.dataPath) || []
+          // 获取不到值得时候返回 undefined, el-pagination 接收一个 null 或者 undefined 会导致没数据但是下一页可点击
+          this.total = _get(resp, this.totalPath) || 0
+          const lastPage = Math.ceil(this.total / this.size)
+          if (0 < lastPage && lastPage < this.page) {
+            this.page = lastPage
+            this.getList(...arguments)
+            return
           }
+        }
 
-          this.data = data
+        this.data = data
 
-          // 树形结构逻辑
-          if (this.isTree) {
-            this.data = this.tree2Array(data, this.expandAll)
-          }
+        // 树形结构逻辑
+        if (this.isTree) {
+          this.data = this.tree2Array(data, this.expandAll)
+        }
 
-          this.showNoData =
-            this.$slots['no-data'] &&
-            this.total === 0 &&
-            (_isEmpty(formValue) || _values(formValue).every(isFalsey))
+        this.showNoData =
+          this.$slots['no-data'] &&
+          this.total === 0 &&
+          (_isEmpty(formValue) || _values(formValue).every(isFalsey))
 
-          this.loading = false
-          /**
-           * 请求返回, 数据更新后触发
-           * @property {object} data - table的数据
-           * @property {object} resp - 请求返回的完整response
-           */
-          this.$emit('update', data, resp)
+        this.loading = false
+        /**
+         * 请求返回, 数据更新后触发
+         * @property {object} data - table的数据
+         * @property {object} resp - 请求返回的完整response
+         */
+        this.$emit('update', data, resp)
 
-          // 开启persistSelection时，需要同步selected状态到el-table中
-          this.$nextTick(() => {
-            this.selectStrategy.updateElTableSelection()
-          })
+        // 开启persistSelection时，需要同步selected状态到el-table中
+        this.$nextTick(() => {
+          this.selectStrategy.updateElTableSelection()
         })
-        .catch(err => {
-          /**
-           * 请求数据失败，返回err对象
-           * @event error
-           */
-          this.$emit('error', err)
-          this.total = 0
-          this.loading = false
-        })
+      }
+
+      const reduceErrData = err => {
+        /**
+         * 请求数据失败，返回err对象
+         * @event error
+         */
+        this.$emit('error', err)
+        this.total = 0
+        this.loading = false
+      }
+      if (url) {
+        this.$axios
+          .get(url, config)
+          .then(reduceSuccessData)
+          .catch(reduceErrData)
+      } else if (customQueryDataFn) {
+        console.error(customQueryDataFn)
+        customQueryDataFn(config)
+          .then(reduceSuccessData)
+          .catch(reduceErrData)
+      }
     },
     async search() {
       const form = this.$refs.searchForm

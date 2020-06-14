@@ -231,7 +231,7 @@
             >
               {{ viewText }}
             </self-loading-button>
-            <template v-for="(btn, i) in extraButtons">
+            <template v-for="(btn, i) in opeartorButtons">
               <self-loading-button
                 v-if="'show' in btn ? btn.show(scope.row) : true"
                 :key="i"
@@ -258,6 +258,30 @@
             >
               {{ deleteText }}
             </self-loading-button>
+            <el-dropdown
+              v-if="collapseButtons.length"
+              placement="bottom"
+              @command="onCommand"
+            >
+              <div class="more-button">
+                <i class="el-icon-more"></i>
+              </div>
+              <el-dropdown-menu
+                slot="dropdown"
+                class="more-button-dropdown-menu"
+              >
+                <el-dropdown-item
+                  v-for="(button, buttonIndex) in collapseButtons"
+                  :key="buttonIndex"
+                  :command="{event: 'onOperation', args: [scope.row, button]}"
+                  >{{
+                    typeof button.text === 'function'
+                      ? button.text(scope.row)
+                      : button.text
+                  }}</el-dropdown-item
+                >
+              </el-dropdown-menu>
+            </el-dropdown>
           </template>
         </el-data-table-column>
 
@@ -858,6 +882,12 @@ export default {
     }
   },
   computed: {
+    opeartorButtons() {
+      return this.extraButtons.filter(item => !item.collapse)
+    },
+    collapseButtons() {
+      return this.extraButtons.filter(item => item.collapse)
+    },
     buttonContainerWidthStr() {
       if (!this.headerInline) {
         return 'auto'
@@ -1090,10 +1120,26 @@ export default {
           .then(reduceSuccessData)
           .catch(reduceErrData)
       } else if (customQueryDataFn) {
-        console.error(customQueryDataFn)
         customQueryDataFn(config)
           .then(reduceSuccessData)
           .catch(reduceErrData)
+      }
+    },
+    onCommand(data) {
+      const {event, args} = data
+      if (event === 'onOperation') {
+        const row = args[0]
+        const button = args[1]
+        if (button && button.atClick) {
+          Promise.resolve(button.atClick(row))
+            .then(flag => {
+              if (flag === false) return
+              this.getList()
+            })
+            .catch(e => {
+              console.error(e)
+            })
+        }
       }
     },
     async search() {
@@ -1381,6 +1427,10 @@ export default {
 
   .row-hide {
     display: none;
+  }
+
+  .more-button {
+    padding: 0 8px;
   }
 }
 </style>
